@@ -12,6 +12,7 @@
         .mark { letter-spacing: 0.28em; font-size: 0.72rem; color: #e8b56a; text-transform: uppercase; margin: 0 0 6px; }
         h1 { margin: 0; font-size: 1.85rem; font-weight: 700; letter-spacing: 0.02em; }
         #total-display { margin-top: 8px; font-size: 1.25rem; font-weight: bold; color: #f0c27a; font-family: 'Segoe UI', sans-serif; }
+        #ship-display { margin-top: 2px; font-size: 0.92rem; color: #e8b56a; font-family: 'Segoe UI', sans-serif; }
         #help-icon { position: absolute; left: 16px; top: 18px; background: none; border: 1px solid #c4843a; font-size: 1.1rem; cursor: pointer; color: #f0c27a; padding: 4px 9px; border-radius: 50%; min-width: 0; }
         .controls { padding: 16px 14px 10px; background: #1c1410; border-bottom: 1px solid #3a2a1c; }
         .control-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; margin-bottom: 10px; }
@@ -35,7 +36,7 @@
         th, td { padding: 10px 8px; border-bottom: 1px solid #3a2a1c; vertical-align: top; text-align: left; }
         td { font-size: 13px; }
         th { background: #2a1c14; color: #f0c27a; position: sticky; top: 0; z-index: 10; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
-        .check-col { width: 28px; text-align: center; }
+        .check-col { width: 52px; text-align: center; }
         .qty-col { width: 44px; text-align: center; }
         .house-col { width: 110px; white-space: normal; word-break: break-word; }
         .name-col { width: 120px; white-space: normal; word-break: break-word; }
@@ -49,7 +50,7 @@
         tr:hover { background: #261911; }
         input.quantity-input { width: 48px; text-align: center; background: #261911; color: #f3e6d4; border: 1px solid #6b4a2a; border-radius: 4px; padding: 4px; }
         .link-cell a { color: #f0c27a; font-size: 1.3rem; text-decoration: none; }
-        input[type="checkbox"] { width: 18px; height: 18px; accent-color: #c4843a; }
+        input[type="checkbox"] { width: 26px; height: 26px; accent-color: #c4843a; margin: 6px; }
         .status-available { color: #86efac; font-weight: 700; }
         .status-sold { color: #fca5a5; font-weight: 700; }
         .stars { color: #f0c27a; font-size: 1.4rem; letter-spacing: 2px; }
@@ -95,6 +96,7 @@
         <p class="mark">Decants · Direct</p>
         <h1>FanOfFrags Trades</h1>
         <div id="total-display">Total Selected: $0</div>
+        <div id="ship-display">Shipping: $0</div>
     </header>
 
     <div class="controls">
@@ -400,6 +402,9 @@
             var text = [s.House, s.Name, s.Perfumer, s.Notes, s.Comment, s.Genre, s.Type || s.Attribute, s.Accords, s.MainAccords].filter(Boolean).join(' ').toLowerCase();
             return term.split(/\s+/).every(function(w){ return !w || text.indexOf(w) !== -1; });
         }
+        function shippingFor(subtotal) {
+            return subtotal > 0 && subtotal < 75 ? 6 : 0;
+        }
         function updateTotal() {
             var total = 0;
             getSelectedRows().forEach(function(row){
@@ -407,7 +412,9 @@
                 var price = parseFloat(row.cells[4].textContent.replace(/[$,]/g,'')) || 0;
                 total += qty * price;
             });
+            var ship = shippingFor(total);
             document.getElementById('total-display').textContent = 'Total Selected: $' + total.toLocaleString();
+            document.getElementById('ship-display').textContent = 'Shipping: $' + ship;
         }
         function updateFooter(data) {
             data = data || trades;
@@ -433,8 +440,21 @@
             }
             tbody.innerHTML = html;
             tbody.querySelectorAll('tr').forEach(function(row){
+                var checkCell = row.querySelector('.check-col');
+                if (checkCell) {
+                    checkCell.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        var cb = checkCell.querySelector('.row-select');
+                        if (!cb || cb.disabled) return;
+                        if (e.target !== cb) {
+                            cb.checked = !cb.checked;
+                            updateSelectAllState();
+                            updateTotal();
+                        }
+                    });
+                }
                 row.addEventListener('click', function(e){
-                    if (e.target.type === 'checkbox' || e.target.classList.contains('quantity-input')) return;
+                    if (e.target.type === 'checkbox' || e.target.classList.contains('quantity-input') || e.target.closest('.check-col')) return;
                     showDetailModal(parseInt(this.getAttribute('data-index'), 10));
                 });
             });
@@ -533,7 +553,8 @@
                 var qty = parseInt(row.querySelector('.quantity-input').value) || 1;
                 text += row.cells[2].textContent.trim() + ' - ' + row.cells[3].textContent.trim() + ' - ' + row.cells[4].textContent.trim() + ' × ' + qty + '\n\n';
             });
-            text += document.getElementById('total-display').textContent;
+            text += document.getElementById('total-display').textContent + '\n';
+            text += document.getElementById('ship-display').textContent;
             navigator.clipboard.writeText(text.trim());
             showToast('Copied');
         }
