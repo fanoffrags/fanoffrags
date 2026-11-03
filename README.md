@@ -1,5 +1,5 @@
 ## Hi there 👋
-
+HMU on reddit and ill show you how to fork this for yourself. all you need is a good sheet exported to csv with your list. view the code in a browser to see mine, copy it, and build your own inventory. its all free and will take an hour once you have your inventory complete. 
 <!--
 **fanoffrags/fanoffrags** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
