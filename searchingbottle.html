@@ -156,6 +156,9 @@
             return 'https://www.parfumo.com/Perfumes/' + house.replace(/ /g, '_') + '/' + name.replace(/ /g, '_');
         }
 
+        function isInspiration(f) {
+            return ((f.Inspiration || '') + '').trim().toUpperCase() === 'N';
+        }
         function matchesSearch(f, term) {
             if (!term) return true;
             var searchableText = [f.House, f.Name, f.Notes, f.Genre].filter(Boolean).join(' ').toLowerCase();
@@ -233,9 +236,9 @@
                             Object.keys(row).forEach(function(key) { if (typeof row[key] === 'string') row[key] = row[key].trim(); });
                             return row;
                         });
-                        renderTable(fragrances);
+                        renderTable(fragrances.filter(isInspiration));
                         renderGenreButtons();
-                        updateFooter();
+                        updateFooter(fragrances.filter(isInspiration));
                         var urlSearch = new URLSearchParams(window.location.search).get('search');
                         if (urlSearch) {
                             document.getElementById('search').value = urlSearch;
@@ -334,6 +337,7 @@
             var genres = [];
             var seen = {};
             fragrances.forEach(function(f) {
+                if (!isInspiration(f)) return;
                 if (f.Genre && !seen[f.Genre]) { seen[f.Genre] = true; genres.push(f.Genre); }
             });
             genres.sort();
@@ -360,6 +364,7 @@
         function filterTable() {
             var term = document.getElementById('search').value.toLowerCase().trim();
             var filtered = fragrances.filter(function(f) {
+                if (!isInspiration(f)) return false;
                 if (!matchesSearch(f, term)) return false;
                 return currentGenres.size === 0 || currentGenres.has(f.Genre);
             });
@@ -382,8 +387,8 @@
             updateSortButton();
             updateGenreButton();
             renderGenreButtons();
-            renderTable(fragrances);
-            updateFooter();
+            renderTable(fragrances.filter(isInspiration));
+            updateFooter(fragrances.filter(isInspiration));
             updateUrl();
         }
 
