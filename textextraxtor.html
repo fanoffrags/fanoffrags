@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fragrance Sale Extractor</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    textarea { width: 100%; height: 220px; font-family: monospace; font-size: 14px; }
+    button { padding: 0.5rem 1rem; margin: 0.5rem 0.5rem 0.5rem 0; }
+    .output { white-space: pre-wrap; background: #f5f5f5; padding: 1rem; border-radius: 6px; }
+    .copy { background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Fragrance Sale Extractor</h1>
+  <p>Upload a screenshot of a sale message (like the Reddit ones). It will OCR it and try to pull out the items + shipping.</p>
+
+  <input type="file" id="image" accept="image/*">
+  <button onclick="process()">Extract</button>
+  <button onclick="clearAll()">Clear</button>
+
+  <h3>Raw OCR</h3>
+  <textarea id="raw" readonly></textarea>
+
+  <h3>Cleaned Extract</h3>
+  <div id="result" class="output"></div>
+  <button class="copy" onclick="copyResult()">Copy Cleaned Text</button>
+
+  <script>
+    async function process() {
+      const file = document.getElementById('image').files[0];
+      if (!file) return alert('Please choose an image first');
+
+      const resultEl = document.getElementById('result');
+      const rawEl = document.getElementById('raw');
+      resultEl.textContent = 'Processing… (this can take 5–15 seconds)';
+      rawEl.value = '';
+
+      try {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng');
+        rawEl.value = text;
+
+        // Simple extraction logic tailored to the style of those messages
+        const cleaned = extractSaleInfo(text);
+        resultEl.textContent = cleaned;
+      } catch (err) {
+        resultEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    function extractSaleInfo(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      let items = [];
+      let total = '';
+      let shipping = '';
+      let addressLines = [];
+      let inAddress = false;
+
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+
+        // Items (look for $ and × or x)
+        if (line.includes('$') && (line.includes('×') || line.includes('x') || line.match(/\$\d/))) {
+          if (!lower.includes('total') && !lower.includes('shipping')) {
+            items.push(line);
+          }
+        }
+
+        if (lower.includes('total selected') || lower.startsWith('total')) {
+          total = line;
+        }
+        if (lower.includes('shipping:') || lower.includes('shipping is')) {
+          shipping = line;
+          inAddress = true;
+          continue;
+        }
+
+        // Address block after "Shipping is" or similar
+        if (inAddress && line.length > 3 && !line.includes('$')) {
+          addressLines.push(line);
+        }
+      }
+
+      let output = '**Purchase List**\n\n';
+      items.forEach(item => output += '- ' + item + '\n');
+      output += '\n';
+      if (total) output += total + '\n';
+      if (shipping) output += shipping + '\n\n';
+      output += '**Shipping Info**\n\n';
+      addressLines.forEach(l => output += l + '\n');
+
+      return output.trim() || 'Could not parse structured data. Check the raw OCR above and copy what you need.';
+    }
+
+    function copyResult() {
+      const text = document.getElementById('result').textContent;
+      navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+    }
+
+    function clearAll() {
+      document.getElementById('image').value = '';
+      document.getElementById('raw').value = '';
+      document.getElementById('result').textContent = '';
+    }
+  </script>
+</body>
+</html>
