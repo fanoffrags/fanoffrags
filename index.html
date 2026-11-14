@@ -661,7 +661,7 @@
                 var house = row.cells[2].textContent.trim();
                 var name = row.cells[3].textContent.trim();
                 var price = row.cells[4].textContent.trim() || 'N/A';
-                var line = house + ' ' + name + ' 5ml ' + price;
+                var line = house + '  ' + name + '  5ml  ' + price;
                 if (qty > 1) line += ' x' + qty;
                 items.push({ house: house, name: name, line: line });
             });
@@ -669,7 +669,7 @@
                 var h = a.house.localeCompare(b.house);
                 return h !== 0 ? h : a.name.localeCompare(b.name);
             });
-            var list = 'House Name Size Price\n\n';
+            var list = 'House  Fragrance  Size  Price\n\n';
             items.forEach(function(it){
                 list += it.line + '\n\n';
             });
