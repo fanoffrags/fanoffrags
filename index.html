@@ -658,19 +658,20 @@
             var items = [];
             rows.forEach(function(row){
                 var qty = parseInt(row.querySelector('.quantity-input').value) || 1;
-                var house = row.cells[2].textContent.trim().replace(/\|/g, '/');
-                var name = row.cells[3].textContent.trim().replace(/\|/g, '/');
-                if (qty > 1) name += ' (x' + qty + ')';
+                var house = row.cells[2].textContent.trim();
+                var name = row.cells[3].textContent.trim();
                 var price = row.cells[4].textContent.trim() || 'N/A';
-                items.push({ house: house, name: name, price: price });
+                var line = house + ' ' + name + ' 5ml ' + price;
+                if (qty > 1) line += ' x' + qty;
+                items.push({ house: house, name: name, line: line });
             });
             items.sort(function(a, b){
                 var h = a.house.localeCompare(b.house);
                 return h !== 0 ? h : a.name.localeCompare(b.name);
             });
-            var list = '| House | Fragrance | Size | Price |\n| --- | --- | --- | --- |\n';
+            var list = 'House Name Size Price\n\n';
             items.forEach(function(it){
-                list += '| ' + it.house + ' | ' + it.name + ' | 5ml | ' + it.price + ' |\n';
+                list += it.line + '\n\n';
             });
             list = list.trim();
             fetch('ad-template.txt?t=' + Date.now()).then(function(res){
