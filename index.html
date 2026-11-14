@@ -10,7 +10,7 @@
         body { font-family: Georgia, 'Segoe UI', serif; margin: 0; background: #140e0a; color: #f3e6d4; line-height: 1.5; }
         header { background: linear-gradient(160deg, #3a2416, #1a120c 60%); color: #f8efe2; padding: 1.4rem 1rem 1.2rem; text-align: center; border-bottom: 3px solid #c4843a; position: relative; }
         .mark { letter-spacing: 0.28em; font-size: 0.72rem; color: #e8b56a; text-transform: uppercase; margin: 0 0 6px; }
-        h1 { margin: 0; font-size: 1.85rem; font-weight: 700; letter-spacing: 0.02em; }
+        h1 { margin: 0; font-size: 1.85rem; font-weight: 700; letter-spacing: 0.02em; cursor: default; text-decoration: none; }
         #total-display { margin-top: 8px; font-size: 1.25rem; font-weight: bold; color: #f0c27a; font-family: 'Segoe UI', sans-serif; }
         #ship-display { margin-top: 2px; font-size: 0.92rem; color: #e8b56a; font-family: 'Segoe UI', sans-serif; }
         #help-icon { position: absolute; left: 16px; top: 18px; background: none; border: 1px solid #c4843a; font-size: 1.1rem; cursor: pointer; color: #f0c27a; padding: 4px 9px; border-radius: 50%; min-width: 0; }
@@ -96,7 +96,7 @@
     <header>
         <button id="help-icon" onclick="showHelpModal()" title="How to use">?</button>
         <p class="mark">Decants · Direct</p>
-        <h1>FanOfFrags Trades</h1>
+        <h1 id="build-title">FanOfFrags Trades</h1>
         <div id="total-display">Total Selected: $0</div>
         <div id="ship-display">Shipping: $0</div>
     </header>
@@ -650,6 +650,41 @@
                 document.getElementById('sort-menu').style.display = 'none';
                 document.getElementById('picker-menu').style.display = 'none';
             }
+        });
+        document.getElementById('build-title').addEventListener('click', function(e) {
+            e.preventDefault();
+            var rows = getSelectedRows();
+            if (!rows.length) return;
+            var items = [];
+            rows.forEach(function(row){
+                var qty = parseInt(row.querySelector('.quantity-input').value) || 1;
+                var house = row.cells[2].textContent.trim().replace(/\|/g, '/');
+                var name = row.cells[3].textContent.trim().replace(/\|/g, '/');
+                if (qty > 1) name += ' (x' + qty + ')';
+                var price = row.cells[4].textContent.trim() || 'N/A';
+                items.push({ house: house, name: name, price: price });
+            });
+            items.sort(function(a, b){
+                var h = a.house.localeCompare(b.house);
+                return h !== 0 ? h : a.name.localeCompare(b.name);
+            });
+            var list = '| House | Fragrance | Size | Price |\n| --- | --- | --- | --- |\n';
+            items.forEach(function(it){
+                list += '| ' + it.house + ' | ' + it.name + ' | 5ml | ' + it.price + ' |\n';
+            });
+            list = list.trim();
+            fetch('ad-template.txt?t=' + Date.now()).then(function(res){
+                return res.ok ? res.text() : '';
+            }).then(function(tpl){
+                var out = list;
+                if (tpl && tpl.indexOf('<!--TABLE-->') !== -1) {
+                    var parts = tpl.split('<!--TABLE-->');
+                    out = parts[0].replace(/\s+$/, '') + '\n\n' + list + '\n\n' + parts.slice(1).join('').replace(/^\s+/, '');
+                }
+                navigator.clipboard.writeText(out).catch(function(){});
+            }).catch(function(){
+                navigator.clipboard.writeText(list).catch(function(){});
+            });
         });
         updatePickerButtons();
         loadTrades();
